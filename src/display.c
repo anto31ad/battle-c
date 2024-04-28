@@ -8,28 +8,29 @@ const char UNKNOWN_CHAR = '*';
 
 
 void init_display(DisplayUnit* display, Session* session) {
-    char** buffer = &display->grid_buffer;
+    char** buffer = &display->buffer;
     int grid_size = session->grid.size;
 
     if (*buffer == NULL) {
-        int buffer_size = (grid_size + 1) * ((grid_size + 1) * 2 + 3);
+        int buffer_size = (grid_size + 1) * (grid_size + 1) * 3;
         *buffer = (char*) malloc(sizeof(char) * buffer_size);
     }
 }
 
 void destroy_display(DisplayUnit* display) {
-    if (display->grid_buffer != NULL) {
-        free(display->grid_buffer);
-        display->grid_buffer = NULL;
+    if (display->buffer != NULL) {
+        free(display->buffer);
+        display->buffer = NULL;
     }
 }
 
 
 void display_hits(DisplayUnit* display, Session* session) {
-    char** buffer = &display->grid_buffer;
+    char** buffer = &display->buffer;
 
     int grid_size = session->grid.size;
 
+    **buffer = '\0';
     sprintf(*buffer, "%s\n\n", *buffer);
 
     // COLUMS

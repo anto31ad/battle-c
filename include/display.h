@@ -4,7 +4,7 @@
 #include "entity.h"
 
 typedef struct {
-    char* grid_buffer;
+    char* buffer;
 } DisplayUnit;
 
 void init_display(DisplayUnit*, Session*);
