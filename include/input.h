@@ -6,7 +6,7 @@ typedef struct {
     int buffer_size_max_b;
 } InputUnit;
 
-char* read_next_command(InputUnit*);
+char* read_input(InputUnit*);
 void init_input(InputUnit*);
 void destroy_input(InputUnit*);
 

@@ -18,26 +18,22 @@ void destroy_input(InputUnit* input) {
     input->buffer = NULL;
 }
 
-char* read_next_command(InputUnit* input) {
+void empty_buffer() {
+    char c;
+    while ( (c = getchar())!= '\n' && c != EOF);
+}
 
-    if (input->buffer == NULL) {
+char* read_input(InputUnit* input) {
+    if (!input->buffer)
         return NULL;
-    }
 
     char* line_ptr = fgets(input->buffer, input->buffer_size_max_b, stdin);
 
-    if (line_ptr != NULL) {
+    if (!line_ptr)
+        return NULL;
 
-        char* newline = strchr(input->buffer, '\n');
+    char* newline = strchr(input->buffer, '\n');
+    newline ? *newline = '\0' : empty_buffer();
 
-        if (newline != NULL) {
-            *newline = '\0';
-        } else {
-            char c;
-            while ( (c = getchar())!= '\n' && c != EOF);
-        }
-
-        return input->buffer;
-    }
-    return NULL;
+    return input->buffer;
 }
