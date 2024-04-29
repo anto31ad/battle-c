@@ -23,17 +23,21 @@ void empty_buffer() {
     while ( (c = getchar())!= '\n' && c != EOF);
 }
 
-char* read_input(InputUnit* input) {
+bool read_input(InputUnit* input) {
     if (!input->buffer)
-        return NULL;
+        return false;
 
     char* line_ptr = fgets(input->buffer, input->buffer_size_max_b, stdin);
 
     if (!line_ptr)
-        return NULL;
+        return false;
 
     char* newline = strchr(input->buffer, '\n');
     newline ? *newline = '\0' : empty_buffer();
 
+    return true;
+}
+
+char* get_buffered_command(InputUnit* input) {
     return input->buffer;
 }

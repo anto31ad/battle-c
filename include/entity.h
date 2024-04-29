@@ -1,9 +1,30 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-
 #include <stdbool.h>
 
+const int GRID_SIZE = 10;
+const int SHIPS_SIZE = 5;
+
+const char SHIP_CARRIER_SIZE = 5;
+const char SHIP_BATTLESHIP_SIZE = 4;
+const char SHIP_CRUISER_SIZE = 3;
+const char SHIP_SUBMARINE_SIZE = 3;
+const char SHIP_DESTROYER_SIZE = 2;
+
+typedef enum {
+    NULL_MSG,
+    ERR_INPUT_READ,
+    QUIT,
+    HELP,
+    UNKNOWN_CMD,
+    COORDS_OUT_OF_BOUNDS,
+    COORDS_ALREADY_CALLED,
+    WATER,
+    SHIP_HIT,
+    SHIP_SUNK,
+    GAME_WON,
+} MessageType;
 
 typedef struct {
     int size;
@@ -32,24 +53,29 @@ typedef struct {
     CallSet calls;
     ShipSet ships;
     int ships_left;
+    int last_called_row;
+    int last_called_col;
     bool game_won;
+    bool quit_requested;
 } Session;
 
+typedef struct {
+    char* buffer;
+    MessageType* msg_queue;
+    int msg_first;
+    int msg_last;
+} DisplayUnit;
 
-void init_shipset(ShipSet*, int);
-void destroy_shipset(ShipSet*);
+typedef struct {
+    char* buffer;
+    int buffer_size_max_b;
+} InputUnit;
 
-void init_grid(Grid*, int);
-void destroy_grid(Grid*);
+typedef struct {
+    Session session;
+    InputUnit input;
+    DisplayUnit display;
+} App;
 
-void init_callset(CallSet*, int);
-void destroy_callset(CallSet*);
-
-void hit_ship(Ship*);
-bool is_ship_sunk(Ship*);
-bool is_cell_empty(Grid*, int, int);
-ShipID get_cell_occupant(Grid*, int, int);
-bool is_cell_called(CallSet*, int, int);
-void add_cell_call(CallSet*, int, int);
 
 #endif

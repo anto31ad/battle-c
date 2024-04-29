@@ -1,16 +1,10 @@
-#include "../include/control.h"
+#include "../include/app.h"
 
 int main() {
 
     App app;
 
-    init_app(&app);
-
-    while (!app_should_close(&app)) {
-        update(&app);
-    }
-
-    destroy_app(&app);
+    run(&app);
 
     return 0;
 }
