@@ -9,6 +9,7 @@ const char WATER_CHAR = '~';
 const char HIT_CHAR = 'X';
 const char UNKNOWN_CHAR = '*';
 const int MSG_QUEUE_SIZE = 4;
+const char* WHITESPACE = "   ";
 
 void init_display(DisplayUnit* display_ptr, Session* session) {
     char** buffer = &display_ptr->buffer;
@@ -17,14 +18,15 @@ void init_display(DisplayUnit* display_ptr, Session* session) {
     if (!*buffer)
         free(*buffer);
 
-    int buffer_size = (grid_size + 1) * (grid_size + 1) * 3;
+    //TODO fitting size and separate buffers
+    int buffer_size = (grid_size + 1) * (grid_size + 1) * 5;
     *buffer = (char*) malloc(sizeof(char) * buffer_size);
 
     if (!display_ptr->msg_queue)
         free(display_ptr->msg_queue);
     
     display_ptr->msg_queue = (MessageType*) malloc(sizeof(MessageType) * MSG_QUEUE_SIZE);
-    display_ptr->msg_first = -1;
+    display_ptr->msg_first = 0;
     display_ptr->msg_last = 0;
 
 }
@@ -36,52 +38,47 @@ void destroy_display(DisplayUnit* display_ptr) {
     }
 }
 
-void buffer_flush(char** buffer_ptr) {
-    **buffer_ptr = '\0';
+void buffer_flush(char* buffer) {
+    *buffer = '\0';
 }
 
-void buffer_append(char** buffer_ptr, const char* str) {
-    sprintf(*buffer_ptr, "%s\n\n", *buffer_ptr);
-}
-
-void generate_hits_grid(char** buffer_ptr, Session* session) {
+void generate_hits_grid(char* buffer, Session* session) {
     int grid_size = session->grid.size;
 
-    buffer_flush(buffer_ptr);
-    sprintf(*buffer_ptr, "%s\n\n", *buffer_ptr);
+    strcat(buffer, "\n\n");
 
     // COLUMS
-    sprintf(*buffer_ptr, "%s\t", *buffer_ptr);
+    strcat(buffer, WHITESPACE);
     for (int col = 0; col < grid_size; col++) {
-        sprintf(*buffer_ptr, "%s%d\t", *buffer_ptr, col+1);
+        sprintf(buffer, "%s%d%s", buffer, col+1, WHITESPACE);
     }
-    sprintf(*buffer_ptr, "%s\n\n", *buffer_ptr);
+    strcat(buffer, "\n\n");
 
     // ROWS
     for (int row = 0; row < grid_size; row++) {
 
-        sprintf(*buffer_ptr, "%s%d\t", *buffer_ptr, row+1);
+        sprintf(buffer, "%s%d%s", buffer, row+1, WHITESPACE);
 
         for (int col = 0; col < grid_size; col++) {
             if (is_cell_called(&session->calls, row, col)) {
                 if (is_cell_empty(&session->grid, row, col)) {
-                    sprintf(*buffer_ptr, "%s%c\t", *buffer_ptr, WATER_CHAR);
+                    sprintf(buffer, "%s%c%s", buffer, WATER_CHAR, WHITESPACE);
                 } else {
-                    sprintf(*buffer_ptr, "%s%c\t", *buffer_ptr, HIT_CHAR);
+                    sprintf(buffer, "%s%c%s", buffer, HIT_CHAR, WHITESPACE);
                 }
             } else {
-                sprintf(*buffer_ptr, "%s%c\t", *buffer_ptr, UNKNOWN_CHAR);
+                sprintf(buffer, "%s%c%s", buffer, UNKNOWN_CHAR, WHITESPACE);
             }
         }
 
-        sprintf(*buffer_ptr, "%s\n\n", *buffer_ptr);
+        strcat(buffer, "\n\n");
     }
 
    
 }
 
 bool no_messages(DisplayUnit* display_ptr) {
-    return (display_ptr->msg_first - display_ptr->msg_first);
+    return !(display_ptr->msg_first - display_ptr->msg_last);
 }
 
 bool push_message(DisplayUnit* display_ptr, MessageType msg_type) {
@@ -97,8 +94,8 @@ MessageType pop_message(DisplayUnit* display_ptr) {
     int* last_ptr = &display_ptr->msg_last;
     int* first_ptr = &display_ptr->msg_first;
 
-    if (!no_messages(display_ptr))
-        return NULL_MSG;
+    if (no_messages(display_ptr))
+        return MSG_NULL;
     
     MessageType popped_msg =  display_ptr->msg_queue[*first_ptr];
     
@@ -106,19 +103,38 @@ MessageType pop_message(DisplayUnit* display_ptr) {
     return popped_msg;
 }
 
-void process_message(Session* session, char** buffer_ptr, MessageType msg_type) {
+void process_message(Session* session, char* buffer, MessageType msg_type) {
  
     switch (msg_type) {
-        case UNKNOWN_CMD:
-            sprintf(*buffer_ptr, "(!) unknown command");
+        case MSG_UNKNOWN_CMD:
+            strcat(buffer, "(!) unknown command");
+            break;
 
-        case ERR_INPUT_READ:
-            sprintf(*buffer_ptr, "(!) error while reading the command");
+        case MSG_ERR_INPUT_READ:
+            strcat(buffer, "(!) error while reading the command");
+            break;
 
-        default: return;
+        case MSG_EMPTY_CMD:
+            strcat(buffer, "(!) please type in a command");
+            break;
+
+        case MSG_WATER:
+            strcat(buffer, "Water!");
+            break;
+
+        case MSG_COORDS_ALREADY_CALLED:
+            sprintf(buffer,
+                "%s(%d,%d) already called!",
+                buffer,
+                session->last_called_col,
+                session->last_called_row);
+            break;
+
+        default:
+            strcat(buffer, "(!) unknown message type");
     }
 
-    sprintf(*buffer_ptr, "\n");
+    strcat(buffer, "\n");
 }
 
 int count_buffered_lines(DisplayUnit* display_ptr) {
@@ -132,9 +148,9 @@ int count_buffered_lines(DisplayUnit* display_ptr) {
         }
     }
 
-    // if ((*buffer_ptr)[0] != '\0' && (*buffer_ptr)[strlen(*buffer_ptr) - 1] != '\n') {
-    //     lines++;
-    // }
+    if ((*buffer_ptr)[0] != '\0' /*&& (*buffer_ptr)[strlen(*buffer_ptr) - 1] != '\n'*/) {
+        lines++;
+    }
     return lines;
 }
 
@@ -148,7 +164,12 @@ void flush_display(DisplayUnit* display_ptr) {
     printf("%s", cursor_buffer);
 
     //clear and move to beginning
-    printf("\033[K");
+    //printf("\033[2K");
+
+    //\033[H move cursor upper left corner
+    //\033[2J clear entire screen or terminal window
+    //\033[3J" clear scrollback
+    printf("\033[2J\033[3J");
 }
 
 void update_display(App* app_ptr) {
@@ -157,15 +178,16 @@ void update_display(App* app_ptr) {
 
     flush_display(display_ptr);
     
-    char** buffer_ptr = &display_ptr->buffer;
+    char* buffer = display_ptr->buffer;
+    buffer_flush(buffer);
     
-    generate_hits_grid(buffer_ptr, &app_ptr->session);
+    generate_hits_grid(buffer, &app_ptr->session);
 
     while(!no_messages(display_ptr)) {
         MessageType cur_msg = pop_message(display_ptr);
-        process_message(&app_ptr->session, buffer_ptr, cur_msg);
+        process_message(&app_ptr->session, buffer, cur_msg);
     }
 
-    sprintf(*buffer_ptr, "type \'<col> <row>\' > ");
-    printf("%s", *buffer_ptr);
+    strcat(buffer, "[battle-c] ");
+    printf("%s", buffer);
 }
