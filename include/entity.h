@@ -52,7 +52,6 @@ typedef struct {
 } Session;
 
 typedef struct {
-    char* buffer;
     MessageType* msg_queue;
     int msg_first;
     int msg_last;
