@@ -30,7 +30,37 @@ void destroy_display(DisplayUnit* display_ptr) {
     }
 }
 
-void display_hits_grid(Session* session) {
+void print_grid(Grid* grid_ptr) {
+    int grid_size = grid_ptr->size;
+
+    printf("\n\n");
+
+    // COLUMS
+    printf("%s", WHITESPACE);
+    for (int col = 0; col < grid_size; col++) {
+        printf("%d%s", col+1, WHITESPACE);
+    }
+    printf("\n\n");
+
+    // ROWS
+    for (int row = 0; row < grid_size; row++) {
+
+        printf("%d%s", row+1, WHITESPACE);
+
+        for (int col = 0; col < grid_size; col++) {
+            if (is_cell_empty(grid_ptr, row, col)) {
+                printf("%c%s", WATER_CHAR, WHITESPACE);
+            } else {
+                printf("%d%s",
+                    get_cell_occupant(grid_ptr, row, col),
+                    WHITESPACE);
+            }
+        }
+        printf("\n\n");
+    }
+}
+
+void print_calls(Session* session) {
     int grid_size = session->grid.size;
 
     printf("\n\n");
@@ -58,11 +88,8 @@ void display_hits_grid(Session* session) {
                 printf("%c%s", UNKNOWN_CHAR, WHITESPACE);
             }
         }
-
         printf("\n\n");
     }
-
-   
 }
 
 static inline bool no_messages(DisplayUnit* display_ptr) {
@@ -132,9 +159,9 @@ static inline void flush_display() {
 void update_display(App* app_ptr) {
     DisplayUnit *display_ptr = &app_ptr->display;
 
-    flush_display();
+    //flush_display();
 
-    display_hits_grid(&app_ptr->session);
+    print_calls(&app_ptr->session);
 
     while(!no_messages(display_ptr)) {
         MessageType cur_msg = pop_message(display_ptr);
