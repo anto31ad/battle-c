@@ -61,6 +61,12 @@ void init_app(App* app) {
     init_input(&app->input);
     init_session(&app->session);
     init_display(&app->display, &app->session);
+
+    if(!start_session(&app->session)) {
+        app->quit_requested = true;
+        return;
+    }
+
     app->quit_requested = false;
 }
 
@@ -77,12 +83,12 @@ bool app_should_close(App * app_ptr) {
 void run(App* app_ptr) {
     init_app(app_ptr);
 
-    start_screen();
+    //start_screen();
 
     while (!app_should_close(app_ptr))
         update(app_ptr);
 
     destroy_app(app_ptr);
 
-    exit_screen();
+    //exit_screen();
 }
