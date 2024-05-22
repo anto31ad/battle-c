@@ -9,8 +9,7 @@
 #define CMD_CMP(s1, s2) (!strcmp((s1), (s2)))
 
 bool handle_coords(Session* session_ptr, DisplayUnit* display_ptr, const char* coords_str) {
-    int row;
-    int col;
+    int row, col;
     int coords_read = sscanf(coords_str, "%d %d", &row, &col);
 
     if (coords_read == 2) {
@@ -27,31 +26,34 @@ void handle_command(App* app_ptr, const char* command) {
 
     //strcmp returns 0 if equal, so !strcmp 
     if (CMD_CMP(command, "")) {
-        push_message(display_ptr, MSG_EMPTY_CMD);
+        sprintf(display_ptr->buffer, "(!) Please type in a command");
+        enqueue_buffered_message(display_ptr);
         return;
     } else if (CMD_CMP(command, "quit")) {
         app_ptr->quit_requested = true;
-        push_message(display_ptr, MSG_QUIT);
         return;
     } else if (CMD_CMP(command, "help")) {
-        push_message(display_ptr, MSG_HELP);
+        sprintf(display_ptr->buffer, "help");
+        enqueue_buffered_message(display_ptr);
         return;
     } else if (handle_coords(session_ptr, display_ptr, command)) {
         return;
     }
-    push_message(display_ptr, MSG_UNKNOWN_CMD);
+    sprintf(display_ptr->buffer, "(!) Unknown command");
+    enqueue_buffered_message(display_ptr);
 }
 
 char* read_command(InputUnit* input_ptr, DisplayUnit* display_ptr) {
     if (!read_input(input_ptr)) {
-        push_message(display_ptr, MSG_ERR_INPUT_READ);
+        sprintf(display_ptr->buffer, "(!) error while reading input");
+        enqueue_buffered_message(display_ptr);
         return NULL;
     }
     return get_buffered_command(input_ptr);
 }
 
 void update(App* app_ptr) {
-    update_display(app_ptr);
+    render_session_display(app_ptr);
 
     char* command = read_command(&app_ptr->input, &app_ptr->display);
     handle_command(app_ptr, command);
@@ -66,7 +68,6 @@ void init_app(App* app) {
         app->quit_requested = true;
         return;
     }
-
     app->quit_requested = false;
 }
 
@@ -77,7 +78,7 @@ void destroy_app(App* app) {
 }
 
 bool app_should_close(App * app_ptr) {
-    return app_ptr->session.game_won || app_ptr->quit_requested;
+    return app_ptr->session.state == S_STATE_WIN || app_ptr->quit_requested;
 }
 
 void run(App* app_ptr) {

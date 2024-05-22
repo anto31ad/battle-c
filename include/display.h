@@ -5,7 +5,7 @@
 
 void init_display(DisplayUnit*, Session*);
 void destroy_display(DisplayUnit*);
-void update_display(App*);
-bool push_message(DisplayUnit*, MessageType);
+void render_session_display(App*);
+void enqueue_buffered_message(DisplayUnit*);
 
 #endif

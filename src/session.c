@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <time.h>
 
 #include "../include/session.h"
@@ -16,7 +17,6 @@ const char SHIP_BATTLESHIP_SIZE = 4;
 const char SHIP_CRUISER_SIZE = 3;
 const char SHIP_SUBMARINE_SIZE = 3;
 const char SHIP_DESTROYER_SIZE = 2;
-
 
 void hit_ship(Ship* ship) {
     ship->damage++;
@@ -119,26 +119,12 @@ static bool init_game_ships(Session* session_ptr) {
     return true;
 }
 
-bool out_of_bounds(Grid* grid_ptr, int val) {
-    return val >= 0 && val < grid_ptr->size; 
+bool out_of_bounds(Grid* grid_ptr, int index) {
+    return index >= 0 && index < grid_ptr->size; 
 }
 
-bool validate_rowcol(Grid* grid_ptr, int val) {
-    return val > 0 && val <= grid_ptr->size; 
-}
-
-bool validate_coords(Session* session_ptr, int row, int col, DisplayUnit* display_ptr) {
-    int errors = 0;
-    
-    if (!validate_rowcol(&session_ptr->grid, row)) {
-        push_message(display_ptr, MSG_ROW_OUT_OF_BOUNDS);
-        errors++;
-    }
-    if (!validate_rowcol(&session_ptr->grid, col)) {
-        push_message(display_ptr, MSG_COL_OUT_OF_BOUNDS);
-        errors++;
-    }
-    return !errors;
+bool validate_rowcol(Grid* grid_ptr, int index) {
+    return index > 0 && index <= grid_ptr->size; 
 }
 
 bool cells_available(Grid* grid_ptr, int row, int col, int shipsize, bool vert) {
@@ -193,8 +179,6 @@ bool fill_grid(Grid* grid_ptr, ShipSet* shipset_ptr) {
 }
 
 void init_session(Session* session) {
-    session->game_won = false;
-
     srand(time(0));
     init_shipset(&session->ships, SHIPS_SIZE);
     session->ships_left = SHIPS_SIZE;
@@ -203,6 +187,7 @@ void init_session(Session* session) {
     
     Grid* grid_ptr = &session->grid;
     init_grid(grid_ptr, GRID_SIZE);
+    session->state = S_STATE_LOOP;
 }
 
 bool start_session(Session* session_ptr) {
@@ -216,48 +201,67 @@ void destroy_session(Session* session) {
     destroy_shipset(&session->ships);
     destroy_grid(&session->grid);
     destroy_callset(&session->calls);
+    session->state = S_STATE_LOOP;
 }
 
 void call_coords(Session* session_ptr, int row, int col, DisplayUnit* display_ptr) {
-    CallSet* calls_ptr = &session_ptr->calls;
-
-    if (!validate_coords(session_ptr, row, col, display_ptr)) {
-        session_ptr->last_called_row = NULL_COORD;
-        session_ptr->last_called_col = NULL_COORD;
-        return;
-    }
-    
-    row--; col--; //offset
-
-    session_ptr->last_called_row = row;
-    session_ptr->last_called_col = col;
-
-    if (is_cell_called(calls_ptr, row, col)) {
-        push_message(display_ptr, MSG_COORDS_ALREADY_CALLED);
-        return;
-    }
-
     Grid* grid_ptr = &session_ptr->grid;
 
-    add_cell_call(calls_ptr, row, col);
-
-    if (is_cell_empty(grid_ptr, row, col)) {
-        push_message(display_ptr, MSG_WATER);
+    //validating coords
+    bool valid_row = validate_rowcol(&session_ptr->grid, row);
+    bool valid_col = validate_rowcol(&session_ptr->grid, col);
+    
+    if (!valid_row && !valid_col) {
+        sprintf(display_ptr->buffer, "row %d and col %d are outside range (1, %d)", row, col, grid_ptr->size);
+        enqueue_buffered_message(display_ptr);
+        return;
+    } else if (!valid_row) {
+        sprintf(display_ptr->buffer, "row %d is outside range (1, %d)", row, grid_ptr->size);
+        enqueue_buffered_message(display_ptr);
+        return;
+    } else if (!valid_col) {
+        sprintf(display_ptr->buffer, "col %d is outside range (1, %d)", row, grid_ptr->size);
+        enqueue_buffered_message(display_ptr);
+        return;
+    }
+    
+    int row_index = row - 1;
+    int col_index = col - 1;
+    CallSet* calls_ptr = &session_ptr->calls;
+    if (is_cell_called(calls_ptr, row_index, col_index)) {
+        sprintf(display_ptr->buffer, "(!) Cell (%d,%d) has already been revealed", row, col);
+        enqueue_buffered_message(display_ptr);
         return;
     }
 
-    push_message(display_ptr, MSG_HIT);
+    //making the attack
 
-    ShipID ship_id = get_cell_occupant(grid_ptr, row, col);
+    add_cell_call(calls_ptr, row_index, col_index);
+
+    if (is_cell_empty(grid_ptr, row_index, col_index)) {
+        sprintf(display_ptr->buffer, "Water!");
+        enqueue_buffered_message(display_ptr);
+        return;
+    }
+
+    ShipID ship_id = get_cell_occupant(grid_ptr, row_index, col_index);
     bool is_sunk = hit(&session_ptr->ships, ship_id);
     
-    if (is_sunk) {
-        session_ptr->ships_left--;
-        push_message(display_ptr, MSG_SUNK);
+    if (!is_sunk) {
+        sprintf(display_ptr->buffer, "Hit!");
+        enqueue_buffered_message(display_ptr);
+        return;
+    }
+    //if ship has been sunk...
+    session_ptr->ships_left--;
 
-        if (session_ptr->ships_left <= 0) {
-            session_ptr->game_won = true;
-            push_message(display_ptr, MSG_GAME_WON);
-        }
+    sprintf(display_ptr->buffer, "Hit and sunk!");
+    enqueue_buffered_message(display_ptr);
+
+    //win condition
+    if (session_ptr->ships_left <= 0) {
+        session_ptr->state = S_STATE_LOOP;
+        sprintf(display_ptr->buffer, "You Won!");
+        enqueue_buffered_message(display_ptr);
     }
 }

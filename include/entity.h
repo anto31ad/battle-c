@@ -6,7 +6,6 @@
 typedef enum {
     MSG_NULL,
     MSG_ERR_INPUT_READ,
-    MSG_QUIT,
     MSG_HELP,
     MSG_UNKNOWN_CMD,
     MSG_EMPTY_CMD,
@@ -17,7 +16,8 @@ typedef enum {
     MSG_HIT,
     MSG_SUNK,
     MSG_GAME_WON,
-} MessageType;
+    MSG_QUIT,
+} Message;
 
 typedef struct {
     int size;
@@ -41,20 +41,26 @@ typedef struct {
     Ship* set;
 } ShipSet;
 
+enum SessionState {
+    S_STATE_OFF,
+    S_STATE_LOOP,
+    S_STATE_WIN,
+    S_STATE_EXIT,
+};
+
 typedef struct {
     Grid grid;
     CallSet calls;
     ShipSet ships;
     int ships_left;
-    int last_called_row;
-    int last_called_col;
-    bool game_won;
+    enum SessionState state;
 } Session;
 
 typedef struct {
-    MessageType* msg_queue;
+    char** msg_queue;
     int msg_first;
     int msg_last;
+    char* buffer;
 } DisplayUnit;
 
 typedef struct {
