@@ -4,7 +4,7 @@
 #include "entity.h"
 
 bool read_input(InputUnit*);
-void init_input(InputUnit*);
+InputUnit* create_input();
 void destroy_input(InputUnit*);
 char* get_buffered_command(InputUnit*);
 

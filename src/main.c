@@ -2,9 +2,7 @@
 
 int main() {
 
-    App app;
-
-    run(&app);
+    run();
 
     return 0;
 }

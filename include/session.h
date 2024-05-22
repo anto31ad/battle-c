@@ -11,7 +11,7 @@ Ship get_ship(ShipSet* shipset, ShipID ship_id);
 bool is_cell_called(CallSet*, int, int);
 void add_cell_call(CallSet*, int, int);
 
-void init_session(Session*);
+Session* create_session();
 bool start_session(Session*);
 void destroy_session(Session*);
 void call_coords(Session*, int, int, DisplayUnit*);

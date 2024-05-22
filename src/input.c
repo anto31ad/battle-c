@@ -8,14 +8,19 @@
 
 const char INPUT_MAX_SIZE = 5;
 
-void init_input(InputUnit* input) {
+InputUnit* create_input() {
+    InputUnit* input = (InputUnit*) malloc(sizeof(input));
+
     input->buffer_size_max_b = sizeof(char) * (INPUT_MAX_SIZE + 1);
     input->buffer = (char*) malloc( input->buffer_size_max_b );
+
+    return input;
 }
 
 void destroy_input(InputUnit* input) {
     free(input->buffer);
     input->buffer = NULL;
+    free(input);
 }
 
 void empty_buffer() {

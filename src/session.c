@@ -178,16 +178,20 @@ bool fill_grid(Grid* grid_ptr, ShipSet* shipset_ptr) {
     return true;
 }
 
-void init_session(Session* session) {
+Session* create_session() {
+    Session* session = (Session*) malloc(sizeof(Session));
+
     srand(time(0));
     init_shipset(&session->ships, SHIPS_SIZE);
     session->ships_left = SHIPS_SIZE;
-    
+
     init_callset(&session->calls, GRID_SIZE);
-    
+
     Grid* grid_ptr = &session->grid;
     init_grid(grid_ptr, GRID_SIZE);
     session->state = S_STATE_LOOP;
+
+    return session;
 }
 
 bool start_session(Session* session_ptr) {
@@ -201,7 +205,7 @@ void destroy_session(Session* session) {
     destroy_shipset(&session->ships);
     destroy_grid(&session->grid);
     destroy_callset(&session->calls);
-    session->state = S_STATE_LOOP;
+    free(session);
 }
 
 void call_coords(Session* session_ptr, int row, int col, DisplayUnit* display_ptr) {
@@ -224,7 +228,7 @@ void call_coords(Session* session_ptr, int row, int col, DisplayUnit* display_pt
         enqueue_buffered_message(display_ptr);
         return;
     }
-    
+    //validation successful, proceed to check if the cell was previously revealed
     int row_index = row - 1;
     int col_index = col - 1;
     CallSet* calls_ptr = &session_ptr->calls;
@@ -233,9 +237,7 @@ void call_coords(Session* session_ptr, int row, int col, DisplayUnit* display_pt
         enqueue_buffered_message(display_ptr);
         return;
     }
-
     //making the attack
-
     add_cell_call(calls_ptr, row_index, col_index);
 
     if (is_cell_empty(grid_ptr, row_index, col_index)) {
@@ -260,7 +262,7 @@ void call_coords(Session* session_ptr, int row, int col, DisplayUnit* display_pt
 
     //win condition
     if (session_ptr->ships_left <= 0) {
-        session_ptr->state = S_STATE_LOOP;
+        session_ptr->state = S_STATE_WIN;
         sprintf(display_ptr->buffer, "You Won!");
         enqueue_buffered_message(display_ptr);
     }

@@ -1,8 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
+// TODO relative or symbolic?
 #include "../include/app.h"
 #include "../include/session.h"
+#include "../include/input.h"
+#include "display.h"
 
 #define start_screen() puts("\033[?1049h\033[H")
 #define exit_screen() puts("\033[?1049l")
@@ -20,9 +25,9 @@ bool handle_coords(Session* session_ptr, DisplayUnit* display_ptr, const char* c
 }
 
 void handle_command(App* app_ptr, const char* command) {
-    InputUnit* input_ptr = &app_ptr->input;
-    DisplayUnit* display_ptr = &app_ptr->display;
-    Session* session_ptr = &app_ptr->session;
+    InputUnit* input_ptr = app_ptr->input;
+    DisplayUnit* display_ptr = app_ptr->display;
+    Session* session_ptr = app_ptr->session;
 
     //strcmp returns 0 if equal, so !strcmp 
     if (CMD_CMP(command, "")) {
@@ -55,41 +60,42 @@ char* read_command(InputUnit* input_ptr, DisplayUnit* display_ptr) {
 void update(App* app_ptr) {
     render_session_display(app_ptr);
 
-    char* command = read_command(&app_ptr->input, &app_ptr->display);
+    char* command = read_command(app_ptr->input, app_ptr->display);
     handle_command(app_ptr, command);
 }
 
-void init_app(App* app) {
-    init_input(&app->input);
-    init_session(&app->session);
-    init_display(&app->display, &app->session);
+App* create_app() {
+    App* app = (App*) malloc(sizeof(App));
+    app->input = create_input();
+    app->session = create_session();
+    app->display = create_display(app->display, app->session);
 
-    if(!start_session(&app->session)) {
-        app->quit_requested = true;
-        return;
-    }
-    app->quit_requested = false;
+    //if starting the session fails request quitting
+    app->quit_requested = !start_session(app->session);
+
+    return app;
 }
 
 void destroy_app(App* app) {
-    destroy_session(&app->session);
-    destroy_input(&app->input);
-    destroy_display(&app->display);
+    destroy_session(app->session);
+    destroy_input(app->input);
+    destroy_display(app->display);
+    free(app);
 }
 
-bool app_should_close(App * app_ptr) {
-    return app_ptr->session.state == S_STATE_WIN || app_ptr->quit_requested;
+bool app_should_close(App* app_ptr) {
+    return app_ptr->session->state == S_STATE_WIN || app_ptr->quit_requested;
 }
 
-void run(App* app_ptr) {
-    init_app(app_ptr);
+void run() {
+    App* app = create_app();
 
     //start_screen();
 
-    while (!app_should_close(app_ptr))
-        update(app_ptr);
+    while (!app_should_close(app))
+        update(app);
 
-    destroy_app(app_ptr);
+    destroy_app(app);
 
     //exit_screen();
 }

@@ -42,7 +42,6 @@ typedef struct {
 } ShipSet;
 
 enum SessionState {
-    S_STATE_OFF,
     S_STATE_LOOP,
     S_STATE_WIN,
     S_STATE_EXIT,
@@ -69,9 +68,9 @@ typedef struct {
 } InputUnit;
 
 typedef struct {
-    Session session;
-    InputUnit input;
-    DisplayUnit display;
+    Session* session;
+    InputUnit* input;
+    DisplayUnit* display;
     bool quit_requested;
 } App;
 

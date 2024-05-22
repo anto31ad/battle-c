@@ -16,7 +16,8 @@ const char* LONG_WHITESPACE = "    ";
 const char* SHORT_WHITESPACE = "   ";
 
 
-void init_display(DisplayUnit* display_ptr, Session* session) {
+DisplayUnit* create_display() {
+    DisplayUnit* display_ptr = (DisplayUnit*) malloc(sizeof(DisplayUnit));
     display_ptr->msg_queue = (char**) malloc(sizeof(char*) * MSG_QUEUE_SIZE);
 
     for (int i = 0; i < MSG_QUEUE_SIZE; i++) {
@@ -29,6 +30,8 @@ void init_display(DisplayUnit* display_ptr, Session* session) {
 
     display_ptr->msg_first = 0;
     display_ptr->msg_last = 0;
+
+    return display_ptr;
 }
 
 void destroy_display(DisplayUnit* display_ptr) {
@@ -43,6 +46,7 @@ void destroy_display(DisplayUnit* display_ptr) {
         free(display_ptr->buffer);
         display_ptr->buffer = NULL;
     }
+    free(display_ptr);
 }
 
 void print_col_header(int grid_size) {
@@ -165,9 +169,9 @@ void pop_message(DisplayUnit* display_ptr) {
 // }
 
 void render_session_display(App* app_ptr) {
-    DisplayUnit *display_ptr = &app_ptr->display;
+    DisplayUnit *display_ptr = app_ptr->display;
 
-    print_calls(&app_ptr->session);
+    print_calls(app_ptr->session);
 
     while(!no_messages(display_ptr)) {
         pop_message(display_ptr);
