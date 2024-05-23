@@ -6,15 +6,18 @@
 #include "../include/session.h"
 
 #define BUFFER_SIZE (100)
-#define MAX_SINGLE_DIGIT_NUMBER (9)
-
-const char WATER_CHAR = '~';
-const char HIT_CHAR = 'X';
-const char UNKNOWN_CHAR = '*';
-const int MSG_QUEUE_SIZE = 4;
-const char* LONG_WHITESPACE = "    ";
-const char* SHORT_WHITESPACE = "   ";
-
+#define MAX_ONE_DIGIT (9)
+#define CHAR_WATER '~'
+#define CHAR_HIT 'X'
+#define CHAR_UNKNOWN '*'
+#define COLOR_WATER "\033[34m"
+#define COLOR_BASE "\033[0m"
+#define COLOR_SHIP "\033[31m"
+#define COLOR_HIT "\033[33m"
+#define COLOR_KNOWN "\033[32m"
+#define STR_SPACE_LONG "   "
+#define STR_SPACE_SHORT "  "
+#define MSG_QUEUE_SIZE (4)
 
 DisplayUnit* create_display() {
     DisplayUnit* display_ptr = (DisplayUnit*) malloc(sizeof(DisplayUnit));
@@ -30,6 +33,8 @@ DisplayUnit* create_display() {
 
     display_ptr->msg_first = 0;
     display_ptr->msg_last = 0;
+
+    display_ptr->grid_peek = false;
 
     return display_ptr;
 }
@@ -51,21 +56,25 @@ void destroy_display(DisplayUnit* display_ptr) {
 
 void print_col_header(int grid_size) {
     int display_col;
-    printf(" %s", LONG_WHITESPACE);
+    printf(" %s", STR_SPACE_LONG);
     for (int col = 0; col < grid_size; col++) {
         display_col = col+1;
-        if (display_col > MAX_SINGLE_DIGIT_NUMBER) {
-            printf("%d%s", display_col, SHORT_WHITESPACE);
+        if (display_col > MAX_ONE_DIGIT) {
+            printf("%d%s", display_col, STR_SPACE_SHORT);
         } else {
-            printf("%d%s", display_col, LONG_WHITESPACE);
+            printf("%d%s", display_col, STR_SPACE_LONG);
         }
     }
     printf("\n\n");
 }
 
-void print_grid(Grid* grid_ptr) {
-    int grid_size = grid_ptr->size;
+void print_grid(Session* session) {
+    Grid* grid = &session->grid;
+    ShipSet* shipset = &session->ships;
+    CallSet* calls = &session->calls;
+    int grid_size = grid->size;
     int display_row, display_col;
+    unsigned int cur_COLOR_SHIP;
 
     printf("\n\n");
     print_col_header(grid_size);
@@ -73,26 +82,34 @@ void print_grid(Grid* grid_ptr) {
     // ROWS
     for (int row = 0; row < grid_size; row++) {
         display_row = row+1;
-        if (display_row > MAX_SINGLE_DIGIT_NUMBER) {
-            printf("%d%s", display_row, SHORT_WHITESPACE);
+        if (display_row > MAX_ONE_DIGIT) {
+            printf("%d%s", display_row, STR_SPACE_SHORT);
         } else {
-            printf("%d%s", display_row, LONG_WHITESPACE);
+            printf("%d%s", display_row, STR_SPACE_LONG);
         }
         for (int col = 0; col < grid_size; col++) {
             display_col = col+1;
-            if (is_cell_empty(grid_ptr, row, col)) {
-                printf("%c", WATER_CHAR);
+            if (is_cell_empty(grid, row, col)) {
+                printf("%s%c", COLOR_WATER, CHAR_WATER);
             } else {
-                printf("%d", get_cell_occupant(grid_ptr, row, col));
+                if (is_cell_called(calls, row, col)) {
+                    printf("%s%d",
+                        COLOR_HIT,
+                        get_cell_occupant(grid, row, col));
+                } else {
+                    printf("%s%d",
+                        COLOR_SHIP,
+                        get_cell_occupant(grid, row, col));
+                }
             }
             //alignment
-            if (display_col > MAX_SINGLE_DIGIT_NUMBER) {
-                printf("%s", SHORT_WHITESPACE);
+            if (display_col > MAX_ONE_DIGIT) {
+                printf("%s", STR_SPACE_SHORT);
             } else {
-                printf("%s", LONG_WHITESPACE);
+                printf("%s", STR_SPACE_LONG);
             }
         }
-        printf("\n\n");
+        printf("\n\n%s", COLOR_BASE);
     }
 }
 
@@ -106,30 +123,30 @@ void print_calls(Session* session) {
     // ROWS
     for (int row = 0; row < grid_size; row++) {
         display_row = row+1;
-        if (display_row > MAX_SINGLE_DIGIT_NUMBER) {
-            printf("%d%s", display_row, SHORT_WHITESPACE);
+        if (display_row > MAX_ONE_DIGIT) {
+            printf("%d%s", display_row, STR_SPACE_SHORT);
         } else {
-            printf("%d%s", display_row, LONG_WHITESPACE);
+            printf("%d%s", display_row, STR_SPACE_LONG);
         }
         for (int col = 0; col < grid_size; col++) {
             display_col = col+1;
             if (is_cell_called(&session->calls, row, col)) {
                 if (is_cell_empty(&session->grid, row, col)) {
-                    printf("%c", WATER_CHAR);
+                    printf("%s%c", COLOR_WATER, CHAR_WATER);
                 } else {
-                    printf("%c", HIT_CHAR);
+                    printf("%s%c", COLOR_HIT, CHAR_HIT);
                 }
             } else {
-                printf("%c", UNKNOWN_CHAR);
+                printf("%s%c", COLOR_BASE, CHAR_UNKNOWN);
             }
             //alignment
-            if (display_col > MAX_SINGLE_DIGIT_NUMBER) {
-                printf("%s", SHORT_WHITESPACE);
+            if (display_col > MAX_ONE_DIGIT) {
+                printf("%s", STR_SPACE_SHORT);
             } else {
-                printf("%s", LONG_WHITESPACE);
+                printf("%s", STR_SPACE_LONG);
             }
         }
-        printf("\n\n");
+        printf("\n\n%s", COLOR_BASE);
     }
 }
 
@@ -170,6 +187,11 @@ void pop_message(DisplayUnit* display_ptr) {
 
 void render_session_display(App* app_ptr) {
     DisplayUnit *display_ptr = app_ptr->display;
+
+    if (display_ptr->grid_peek) {
+        print_grid(app_ptr->session);
+        display_ptr->grid_peek = false;
+    }
 
     print_calls(app_ptr->session);
 

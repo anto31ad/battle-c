@@ -57,6 +57,10 @@ Ship get_ship(ShipSet *shipset, ShipID ship_id) {
     return shipset->set[ship_id];
 }
 
+char get_ship_letter(ShipSet *shipset, ShipID ship_id) {
+    return shipset->set[ship_id].name;
+}
+
 bool is_cell_empty(Grid* grid, int row, int col) {
     return get_cell_occupant(grid, row, col) < 0;
 }

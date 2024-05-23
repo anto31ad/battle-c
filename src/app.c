@@ -7,7 +7,7 @@
 #include "../include/app.h"
 #include "../include/session.h"
 #include "../include/input.h"
-#include "display.h"
+#include "../include/display.h"
 
 #define start_screen() puts("\033[?1049h\033[H")
 #define exit_screen() puts("\033[?1049l")
@@ -40,6 +40,9 @@ void handle_command(App* app_ptr, const char* command) {
     } else if (CMD_CMP(command, "help")) {
         sprintf(display_ptr->buffer, "help");
         enqueue_buffered_message(display_ptr);
+        return;
+    } else if (CMD_CMP(command, "peek")) {
+        display_ptr->grid_peek = true;
         return;
     } else if (handle_coords(session_ptr, display_ptr, command)) {
         return;

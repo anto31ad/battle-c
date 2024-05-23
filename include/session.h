@@ -8,6 +8,7 @@ bool is_ship_sunk(Ship*);
 bool is_cell_empty(Grid*, int, int);
 ShipID get_cell_occupant(Grid*, int, int);
 Ship get_ship(ShipSet* shipset, ShipID ship_id);
+char get_ship_letter(ShipSet* shipset, ShipID ship_id);
 bool is_cell_called(CallSet*, int, int);
 void add_cell_call(CallSet*, int, int);
 

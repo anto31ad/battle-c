@@ -3,45 +3,31 @@
 
 #include <stdbool.h>
 
-typedef enum {
-    MSG_NULL,
-    MSG_ERR_INPUT_READ,
-    MSG_HELP,
-    MSG_UNKNOWN_CMD,
-    MSG_EMPTY_CMD,
-    MSG_ROW_OUT_OF_BOUNDS,
-    MSG_COL_OUT_OF_BOUNDS,
-    MSG_COORDS_ALREADY_CALLED,
-    MSG_WATER,
-    MSG_HIT,
-    MSG_SUNK,
-    MSG_GAME_WON,
-    MSG_QUIT,
-} Message;
-
 typedef struct {
-    int size;
-    int damage;
+    unsigned int size;
+    unsigned int damage;
+    char name;
 } Ship;
 
 typedef int ShipID;
 
 typedef struct {
-    int size;
+    unsigned int size;
     ShipID* cells;
 } Grid;
 
 typedef struct {
-    int size;
+    unsigned int size;
     bool* cells;
 } CallSet;
 
 typedef struct {
-    int size;
+    unsigned int size;
     Ship* set;
 } ShipSet;
 
 enum SessionState {
+    S_STATE_PEEK,
     S_STATE_LOOP,
     S_STATE_WIN,
     S_STATE_EXIT,
@@ -60,6 +46,8 @@ typedef struct {
     int msg_first;
     int msg_last;
     char* buffer;
+    bool grid_peek;
+    char** ship_color;
 } DisplayUnit;
 
 typedef struct {
